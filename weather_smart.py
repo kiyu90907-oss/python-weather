@@ -59,7 +59,7 @@ def 获取经纬度(城市名):  # 输入城市名 调用地理编码API 返回�
 def 获取天气描述(纬度, 经度):
     """获取天气状况的中文描述，如：晴天、阴天、小雨"""
 
-    # 天气API地址 和22.之前的基础版一样 但多加了一个参数：&daily=weathercode 表示额外获取每天的天气代码数据
+    # 天气API地址 和之前的基础版一样 但多加了一个参数：&daily=weathercode 表示额外获取每天的天气代码数据
     url = f"https://api.open-meteo.com/v1/forecast?latitude={纬度}&longitude={经度}&current_weather=true&daily=weathercode"
 
     try:
