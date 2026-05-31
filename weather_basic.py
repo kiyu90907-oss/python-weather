@@ -9,7 +9,7 @@ def 获取天气(纬度, 经度):
     # 拼接API请求的URL 把经纬度参数填进去
     url = f"https://api.open-meteo.com/v1/forecast?latitude={纬度}&longitude={经度}&current_weather=true"
 
-    # 用try来捕获网络请求可能出现的错误
+    # try尝试执行 如果网络出错就跳到except
     try:
         # 向天气服务器发送get请求
         r = requests.get(url)
