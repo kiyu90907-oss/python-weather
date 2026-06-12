@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+weather_log.txt
+.DS_Store
+Thumbs.db

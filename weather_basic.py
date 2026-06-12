@@ -1,73 +1,69 @@
-# 导入requests模块用来发HTTP请求
-import requests
-# 导入datetime模块用来获取当前时间
+from __future__ import annotations
+
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
-# 定义一个函数用来获取天气数据
-def 获取天气(纬度, 经度):
-    """获取指定经纬度的当前天气"""
-    # 拼接API请求的URL 把经纬度参数填进去
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={纬度}&longitude={经度}&current_weather=true"
+import requests
 
-    # try尝试执行 如果网络出错就跳到except
+
+FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+LOG_FILE = Path("weather_log.txt")
+
+城市列表 = {
+    "1": {"名字": "深圳", "纬度": 22.5, "经度": 114.0},
+    "2": {"名字": "北京", "纬度": 39.9, "经度": 116.4},
+    "3": {"名字": "上海", "纬度": 31.2, "经度": 121.4},
+    "4": {"名字": "长沙", "纬度": 28.2, "经度": 113.0},
+    "5": {"名字": "广州", "纬度": 23.1, "经度": 113.3},
+    "6": {"名字": "杭州", "纬度": 30.3, "经度": 120.2},
+    "7": {"名字": "益阳", "纬度": 28.6, "经度": 112.3},
+    "8": {"名字": "邵阳", "纬度": 27.3, "经度": 111.5},
+}
+
+
+def 获取天气(纬度: float, 经度: float, timeout: float = 10) -> dict[str, Any] | None:
+    """获取指定经纬度的当前天气。"""
+    params = {
+        "latitude": 纬度,
+        "longitude": 经度,
+        "current_weather": "true",
+    }
+
     try:
-        # 向天气服务器发送get请求
-        r = requests.get(url)
-        # 如果状态码是200说明请求成功
-        if r.status_code == 200:
-            # 把服务器返回的JSON数据转成Python字典
-            data = r.json()
-            # 从字典里取出当前天气部分
-            天气 = data["current_weather"]
-
-            # 返回一个字典，包含温度、风速、风向、时间
-            return {
-                "温度": 天气["temperature"],
-                "风速": 天气["windspeed"],
-                "风向": 天气["winddirection"],
-                "时间": 天气["time"]
-            }
-        else:
-            # 状态码不是200，打印失败信息
-            print(f"请求失败，状态码: {r.status_code}")
-            # 返回None表示没拿到数据
-            return None
-
-    except Exception as e:
-        # 网络出错时打印错误信息
-        print(f"网络出错: {e}")
-        # 返回None表示没拿到数据
+        response = requests.get(FORECAST_URL, params=params, timeout=timeout)
+        response.raise_for_status()
+        天气 = response.json()["current_weather"]
+    except (requests.RequestException, KeyError, ValueError) as exc:
+        print(f"天气查询失败: {exc}")
         return None
 
-# 定义一个函数把天气数据保存到文件
-def 保存天气(城市名, 数据):
-    """将天气数据追加写入文件"""
-    # 如果数据为空则什么都不做
+    return {
+        "温度": 天气["temperature"],
+        "风速": 天气["windspeed"],
+        "风向": 天气["winddirection"],
+        "时间": 天气["time"],
+    }
+
+
+def 保存天气(城市名: str, 数据: dict[str, Any] | None, log_file: Path = LOG_FILE) -> None:
+    """将天气数据追加写入文件。"""
     if 数据 is None:
         return
 
-    # 获取当前时间
     时间 = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # 拼接要保存的内容：时间、城市名、温度、风速、风向
     内容 = f"[{时间}] {城市名}: 温度{数据['温度']}°C, 风速{数据['风速']}km/h, 风向{数据['风向']}°\n"
-
-    # 以追加模式打开weather_log.txt，如果文件不存在则自动创建
-    with open("weather_log.txt", "a", encoding="utf-8") as f:
-        # 把内容写入文件
-        f.write(内容)
-
-    # 打印保存成功的提示
+    with log_file.open("a", encoding="utf-8") as file:
+        file.write(内容)
     print(f"已保存: {内容.strip()}")
 
 
-# 定义一个函数在屏幕上格式化显示天气
-def 显示天气(城市名, 数据):
-    """格式化显示天气信息"""
-    # 如果数据为空则什么都不做
+def 显示天气(城市名: str, 数据: dict[str, Any] | None) -> None:
+    """格式化显示天气信息。"""
     if 数据 is None:
+        print("暂无天气数据")
         return
 
-    # 打印天气信息的格式化面板
     print("\n" + "=" * 30)
     print(f"       {城市名} 当前天气")
     print("=" * 30)
@@ -78,54 +74,33 @@ def 显示天气(城市名, 数据):
     print("=" * 30)
 
 
-# 定义主程序
-def main():
-    # 城市经纬度对照表，用字典存城市信息
-    城市列表 = {
-        "1": {"名字": "深圳", "纬度": 22.5, "经度": 114.0},
-        "2": {"名字": "北京", "纬度": 39.9, "经度": 116.4},
-        "3": {"名字": "上海", "纬度": 31.2, "经度": 121.4},
-        "4": {"名字": "长沙", "纬度": 28.2, "经度": 113.0},
-        "5": {"名字": "广州", "纬度": 23.1, "经度": 113.3},
-        "6": {"名字": "杭州", "纬度": 30.3, "经度": 120.2},
-        "7": {"名字": "益阳", "纬度": 28.6, "经度": 112.3},
-        "8": {"名字": "邵阳", "纬度": 27.3, "经度": 111.5},
-    }
+def 显示菜单() -> None:
+    print("\n          天气查询系统")
+    print("-" * 30)
+    for 编号, 城市 in 城市列表.items():
+        print(f"  {编号}. {城市['名字']}")
+    print("  0. 退出")
+    print("-" * 30)
 
-    # 无限循环，可以反复查询
+
+def main() -> None:
     while True:
-        # 打印菜单
-        print("\n          天气查询系统")
-        print("-" * 30)
-        # 遍历城市列表，打印每个城市的编号和名字
-        for 编号, 城市 in 城市列表.items():
-            print(f"  {编号}. {城市['名字']}")
-        print("  0. 退出")
-        print("-" * 30)
+        显示菜单()
+        选择 = input("请选择城市编号: ").strip()
 
-        # 获取用户的选择
-        选择 = input("请选择城市编号:")
-
-        # 如果输入0，退出循环
         if 选择 == "0":
-            print("感谢使用，欢迎下次使用ovo")
+            print("感谢使用，欢迎下次使用")
             break
-        # 如果输入的编号在城市列表中
-        elif 选择 in 城市列表:
-            # 获取该编号对应的城市信息
-            城市 = 城市列表[选择]
-            print(f"\n正在查询{城市['名字']}天气...")
-            # 调用获取天气函数，传入经纬度
-            数据 = 获取天气(城市["纬度"], 城市["经度"])
-            # 调用显示天气函数
-            显示天气(城市["名字"], 数据)
-            # 调用保存天气函数
-            保存天气(城市["名字"], 数据)
-        else:
-            # 输入的编号无效
+        if 选择 not in 城市列表:
             print("无效选择，请重试")
+            continue
+
+        城市 = 城市列表[选择]
+        print(f"\n正在查询{城市['名字']}天气...")
+        数据 = 获取天气(城市["纬度"], 城市["经度"])
+        显示天气(城市["名字"], 数据)
+        保存天气(城市["名字"], 数据)
 
 
-# 直接运行这个文件就执行main函数
 if __name__ == "__main__":
     main()
